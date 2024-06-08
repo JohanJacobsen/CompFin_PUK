@@ -8,6 +8,7 @@
 #include "kSpecialFunction.h"
 #include "kInlines.h"
 #include "kVector.h"
+#include "kMatrix.h"
 #include <cmath>
 #include <algorithm>
 #include <string>
@@ -61,11 +62,107 @@ public:
 		const int			numx,
 		const bool			update,
 		const int			numPr,
-		double&				res0,
-		kVector<double>&	s,
-		kVector<double>&	res,
-		string&				error);
+		const int			boundary, //	don't calc boundary (0), calc boundary (1)
+		const double		barrier,    //  down-and-out barrier
+		const double		bt, // down-and-out type simple or advanced
+		double& res0,
+		kVector<double>& s,
+		kVector<double>& res,
+		kVector<double>& eeb,
+		string& error);
 
+	//	fd runner
+	static bool	fdRunnerTry(
+		const double		s0,
+		const double		r,
+		const double		mu,
+		const double		sigma,
+		const double		expiry,
+		const double		strike,
+		const bool			dig,
+		const int			pc,			//	put (-1) call (1)
+		const int			ea,			//	european (0), american (1)
+		const int			smooth,		//	smoothing
+		const double		theta,
+		const int			wind,
+		const double		numStd,
+		const int			numt,
+		const int			numx,
+		const bool			update,
+		const int			numPr,
+		double& res0,
+		kVector<double>& s,
+		kVector<double>& res,
+		string& error);
+
+	static bool fdfwdRunner(
+		const double		s0,
+		const double		r,
+		const double		mu,
+		const double		sigma,
+		const double        max_expiry,
+		kVector<double>& strikes,
+		const bool			dig,
+		const int			pc,			//	put (-1) call (1)
+		const int			ea,			//	european (0), american (1)
+		const int			smooth,		//	smoothing
+		const double		theta,
+		const int			wind,
+		const double		numStd,
+		const int			numT,
+		const int			numS,
+		const bool			update,
+		const int			numPr,
+		//double&			res0,
+		kVector<double>& s,
+		kMatrix<double>& resM,
+		string& error);
+
+	static bool fdfwdRunner_call(
+		const double		s0,
+		const double		r,
+		const double		mu,
+		const double		sigma,
+		const double        max_expiry,
+		//kVector<double>& strikes,
+		const bool			dig,
+		const int			pc,			//	put (-1) call (1)
+		const int			ea,			//	european (0), american (1)
+		const int			smooth,		//	smoothing
+		const double		theta,
+		const int			wind,
+		const double		numStd,
+		const int			numT,
+		const int			numS,
+		const bool			update,
+		const int			numPr,
+		//double&			res0,
+		kVector<double>& s,
+		kMatrix<double>& resM,
+		string& error);
+
+	static bool fdfwdRunner_new(
+		const double		s0,
+		const double		r,
+		const double		mu,
+		const double		sigma,
+		kVector<double>& expiries,
+		kVector<double>& strikes,
+		const bool			dig,
+		const int			pc,			//	put (-1) call (1)
+		const int			ea,			//	european (0), american (1)
+		const int			smooth,		//	smoothing
+		const double		theta,
+		const int			wind,
+		const double		numStd,
+		const int			numT,
+		const int			numS,
+		const bool			update,
+		const int			numPr,
+		//double&			res0,
+		kVector<double>& s,
+		kMatrix<double>& resM,
+		string& error);
 };
 
 template <class V>
@@ -77,12 +174,12 @@ kBlack::call(
 	V	volatility)
 {
 	// expiry ok?
-	if(expiry<=0) return max(forward-strike,0.0);
+	if (expiry <= 0) return max(forward - strike, 0.0);
 
-	V std	 = volatility*sqrt(expiry);
-	V xPlus	 = log(forward/strike)/std + 0.5*std;
+	V std = volatility * sqrt(expiry);
+	V xPlus = log(forward / strike) / std + 0.5 * std;
 	V xMinus = xPlus - std;
-	V res	 = forward*kSpecialFunction::normalCdf(xPlus) - strike*kSpecialFunction::normalCdf(xMinus);
+	V res = forward * kSpecialFunction::normalCdf(xPlus) - strike * kSpecialFunction::normalCdf(xMinus);
 
 	// return
 	return res;
@@ -97,12 +194,12 @@ kBlack::vega(
 	V	volatility)
 {
 	// expiry ok?
-	if(expiry<=0) return 0.0;
+	if (expiry <= 0) return 0.0;
 
 	V sqrtT = sqrt(expiry);
-	V std	= volatility*sqrtT;
-	V xPlus	= log(forward/strike)/std + 0.5*std;
-	V res	= forward*kSpecialFunction::normalPdf(xPlus)*sqrtT;
+	V std = volatility * sqrtT;
+	V xPlus = log(forward / strike) / std + 0.5 * std;
+	V res = forward * kSpecialFunction::normalPdf(xPlus) * sqrtT;
 
 	// return
 	return res;
